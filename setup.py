@@ -94,7 +94,7 @@ setup_helpers.cmdclassd = cmdclassd
 extensions = []
 
 # A dictionary to keep track of all package data to install
-package_data = {PACKAGENAME: ['data/*']}
+package_data = {PACKAGENAME: ['data/*', 'tests/data/*']}
 
 # A dictionary to keep track of extra packagedir mappings
 package_dirs = {}
