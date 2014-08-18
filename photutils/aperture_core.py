@@ -10,6 +10,7 @@ import warnings
 import astropy.units as u
 from astropy.io import fits
 from astropy.table import Table
+from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy.extern import six
 from astropy.utils.exceptions import AstropyUserWarning
@@ -51,7 +52,7 @@ def skycoord_to_pixel(positions, wcs):
     # Check which frame the wcs uses
     framename = utils.wcs_to_celestial_frame(wcs).name
     frame = getattr(positions, framename)
-    component_names = frame.representation_component_names.keys()[0:2]
+    component_names = list(frame.representation_component_names.keys())[0:2]
     if len(positions.shape) > 0:
         positions_repr = u.Quantity(zip(getattr(frame,
                                                 component_names[0]).deg,
@@ -206,7 +207,7 @@ class SkyCircularAperture(SkyAperture):
         else:
             raise TypeError("positions should be a SkyCoord instance")
 
-        if not isinstance(r, u.Quantity):
+        if isinstance(r, u.Quantity):
             self.r = r
         else:
             raise TypeError("r should be a Quantity instance")
@@ -215,12 +216,12 @@ class SkyCircularAperture(SkyAperture):
         """
         Return a CircularAperture instance in pixel coordinates
         """
-        pixelpositions = skycoord_to_pixel(self.positions)
+        pixelpositions = skycoord_to_pixel(self.positions, wcs)
         r = self.r.value  # TODO: fix, wrong for now, requires pixel scale
         return CircularAperture(pixelpositions, r)
 
 
-class CircularAperture(Aperture):
+class CircularAperture(PixelAperture):
     """
     Circular aperture(s).
 
@@ -1020,13 +1021,13 @@ def aperture_photometry(data, apertures, unit=None, wcs=None,
                              'required')
 
     if wcs_transformation is None:
-        wcs_transformation = wcs.WCS(header)
+        wcs_transformation = WCS(header)
 
     ap = apertures
 
     positions = ap.positions
     if isinstance(apertures, SkyAperture):
-        apertures = ap.with_wcs(wcs_transformation)
+        ap = ap.to_pixel(wcs_transformation)
     pixelpositions = ap.positions
 
     # Prepare version return data
